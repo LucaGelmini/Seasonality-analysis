@@ -186,13 +186,11 @@ def datosTabla(datos, vari, ultiAnio, items, redondeo = 1):
             out.append(agrega_variacion(muestras_x_mes, vari))
     return out
 
-def hace_tabla (ax, datos, vari, col_width, items, redondeo):
-        
-
-        lista_meses = list(muestras_x_mes.keys())
+def hace_tabla (ax, col_width, items, datos_para_tabla):
+        lista_meses = traduce_meses(list(muestras_x_mes.keys()))
 
         tabla = ax.table(
-                datosTabla(datos, vari, ultimoanio(datos), items, redondeo),
+                datos_para_tabla,
                 colLabels=lista_meses,
                 #rowLabels=['Máx','Min','Prom','2021', 'Q1', 'Q2', 'Q3','Std'],
                 rowLabels= items,
@@ -206,10 +204,22 @@ def hace_tabla (ax, datos, vari, col_width, items, redondeo):
 
         return tabla
 
+def traduce_meses(mesesIngles: list[str]):
+    traductor = {'jan': 'Ene', 'feb': 'Feb', 'mar': 'Mar',
+                 'apr': 'Abr', 'may': 'May', 'jun': 'Jun',
+                 'jul': 'Jul', 'aug': 'Ago', 'sep': 'Sep',
+                 'oct': 'Oct', 'nov': 'Nov', 'dec': 'Dic'
+    }
+    if mesesIngles[0].lower()=='jan':
+        return [traductor[mes.lower()] for mes in mesesIngles]
+    else:
+        return mesesIngles
+
+
 class Grafo_Estacionalidad:
     def __init__(self, df, *nom_columnas_dato, tituloax1: str = None, tituloax2: str= None, items_tabla = ('ultiAnio', 'med','desvio','max','min','varInter')):
         self.df = df
-        self.nom_columnas_dato =nom_columnas_dato
+        self.columnas_dato =nom_columnas_dato
         self.tituloax1 = tituloax1
         self.tituloax2 = tituloax2
         self.width = 20
@@ -218,23 +228,16 @@ class Grafo_Estacionalidad:
         self.fig = None
         self.ejes = None
         self.colors = ['gold','blueviolet', 'blueviolet', 'gold']
-        self.items_tabla= items_tabla
+        self.items_tabla = items_tabla
+        self.nombre_filas = ('Ultimo Año', 'Media','Desvío estandar','Máximo','Mínimo','Variación interanual')
         self.redondeo = 1
         self.table_titles = [None]*2
 
-    def set_table_items(self, items: list):
-        self.items_tabla = items
-
-    def get_table_items(self):
-        return self.items_tabla
-    def set_size(self,w,l):
-        self.width = w
-        self.length = l
-
-    def set_colors(self, colors):
-        self.colors = colors
-
+    ######################################## Función Principal ##############################################
+    ########################################                   ##############################################
     def hacer_grafo(self):
+        
+        ### Intentos infructuosos de usar una fuente instalada (infructuosos al exportar en pdf) ####
         # specify the custom font to use
         font_dirs = ['./fonts/HelveticaNeueLTStd-Cn.otf']
         font_files = font_manager.findSystemFonts(fontpaths=font_dirs)
@@ -244,76 +247,61 @@ class Grafo_Estacionalidad:
 
         # set font
         plt.rcParams['font.family'] = 'Helvetica'
+        
+        #________________________________
+        
+        columnas_dato = self.columnas_dato
 
-
-        axes_ratio = [self.axes_ratio[1] for _ in self.nom_columnas_dato]
+        axes_ratio = [self.axes_ratio[1] for _ in columnas_dato]
         axes_ratio.insert(0,self.axes_ratio[0])
 
-        self.fig, ejes = plt.subplots(3,1, gridspec_kw={'height_ratios': axes_ratio})
+        self.fig, ejes = plt.subplots((len(columnas_dato)+1),1, gridspec_kw={'height_ratios': axes_ratio})
+        eje_lineas =ejes[0]
+        ejes_tablas = ejes[1:]
         
         self.fig.set_size_inches(self.width,self.length)
 
         self.ejes = ejes
 
-        ax1 = ejes[0]
-        ax2 = ejes[0]
-        ax_tabla1 = ejes[1]
-        ax_tabla2 = ejes[2]
-        
-        columna1 = self.nom_columnas_dato[0]
-        columna2 = self.nom_columnas_dato[1]
-        
-        dat1= self.df[columna1].to_list()
-        dat2= self.df[columna2].to_list()
-
-        media_columna1 = f'{columna1}_media'
-        media_columna2 = f'{columna2}_media'
-
-        med1= self.df[media_columna1].to_list()
-        med2= self.df[media_columna2].to_list()
-
-        vari_columna1 = f'{columna1}_var'
-        vari_columna2 = f'{columna2}_var'
-
-        vari1 = self.df[vari_columna1].to_list()
-        vari2 = self.df[vari_columna2].to_list()
-
-        datos_corridos1, media_corrida1 = corrimientoMuestras(dat1, med1)
-        datos_corridos2, media_corrida2 = corrimientoMuestras(dat2, med2)
-
-
-        for i in range(12):
-            ax1.plot(datos_corridos1[i], color = "gold", linewidth=2)
-            ax1.plot(media_corrida1[i], color = "darkblue", linewidth=2)
-        
-        for i in range(12):
-            ax2.plot(datos_corridos2[i], color = "blueviolet")
-            ax2.plot(media_corrida2[i], color = "orange")
-        #dibujo lineas verticales por mes
-        for muestras in muestrasxMes_acum:
-            ax1.axvline(muestras, color='grey', linestyle='--' )
-            ax2.axvline(muestras, color='grey', linestyle='--' )
+        for count, columna_dato in enumerate(columnas_dato):
             
-        ax1.set_xmargin(0)
-        ax2.set_xmargin(0)
-        ax1.set_xticks([])
-        ax2.set_xticks([])
+            columna_dato_media = f'{columna_dato}_media'
+            columna_dato_vari = f'{columna_dato}_var'
+
+            dato= self.df[columna_dato].to_list()
+            media= self.df[columna_dato_media].to_list()
+            variacion = self.df[columna_dato_vari].to_list()
+            
+            datos_corridos, media_corrida = corrimientoMuestras(dato, media)
+
+            for i in range(12):
+                eje_lineas.plot(datos_corridos[i], color = self.colors[count+(count)*(0<count)], linewidth=2)
+                eje_lineas.plot(media_corrida[i], color = self.colors[count+1+(count)*(0<count)], linewidth=2)
+            
+            #dibujo lineas verticales por mes
+            for muestras in muestrasxMes_acum:
+                eje_lineas.axvline(muestras, color='grey', linestyle='--' )
+                
+            eje_lineas.set_xmargin(0)
+            eje_lineas.set_xticks([])
+            
 
         
+            #agrega las tablas
+            hace_tabla( ejes_tablas[count],
+                        col_width,
+                        self.nombre_filas,
+                        datosTabla(dato, variacion, ultimoanio(dato), self.items_tabla, self.redondeo)
+                        )
+            ejes_tablas[count].axis("off")
+            #ejes_tablas[count].axis('tight')
 
+            ejes_tablas[count].set_title(self.table_titles[count], fontsize = 20)      
         
-        #agrega las tablas
-        hace_tabla(ax_tabla1, dat1, vari1, col_width, self.items_tabla, self.redondeo)
-        hace_tabla(ax_tabla2, dat2, vari2, col_width, self.items_tabla, self.redondeo)
-        ax_tabla1.axis("off")
-        ax_tabla2.axis("off")
-        #ax_tabla1.axis('tight')
-        #ax_tabla2.axis('tight')
+        eje_lineas.set_title(self.tituloax1, fontsize = 25)
+        eje_lineas.tick_params(axis='y', which='major', labelsize=15)
+        
 
-        ax1.set_title(self.tituloax1, fontsize = 20)
-
-        ax_tabla1.set_title(self.table_titles[0], fontsize = 20)
-        ax_tabla2.set_title(self.table_titles[1], fontsize = 20)
 
         plt.subplots_adjust(left=0.1,
                     bottom=0.1, 
@@ -326,7 +314,21 @@ class Grafo_Estacionalidad:
 
 
         return self.fig, self.ejes
+    
+    ####################################### Seters and Geters ############################################
 
+    def set_table_items(self, items: list):
+        self.items_tabla = items
+
+    def get_table_items(self):
+        return self.items_tabla
+    def set_size(self,w,l):
+        self.width = w
+        self.length = l
+
+    def set_colors(self, colors):
+        self.colors = colors
+        
     def set_redondeo(self, redondeo):
         self.redondeo=redondeo
 
@@ -356,5 +358,10 @@ class Grafo_Estacionalidad:
         
     def print(self, directorio):
         self.fig.savefig(directorio, transparent=False, dpi=300, bbox_inches = "tight")
-
+        
+    def set_row_names(self, row_names: list[tuple]):
+        self.nombre_filas = row_names
+        
+    def set_ylabel (self, label: str, fontsize:int = 25):
+        self.ejes[0].set_ylabel(label, fontsize = fontsize)
         
