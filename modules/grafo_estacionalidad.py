@@ -326,15 +326,15 @@ class Grafo_Estacionalidad:
         self.width = w
         self.length = l
 
-    def set_colors(self, colors):
+    def set_colors(self, *colors: str):
         self.colors = colors
         
     def set_redondeo(self, redondeo):
         self.redondeo=redondeo
 
-    def set_legends(self, *nombres):
-        custom_lines = [Line2D([0], [0], color='gold', lw=4),
-                Line2D([0], [0], color='blueviolet', lw=4)]
+    def set_legends(self, *nombres: str):
+        custom_lines = [Line2D([0], [0], color= self.colors[0], lw=4),
+                Line2D([0], [0], color=self.colors[1], lw=4)]
 
         self.ejes[0].legend(custom_lines, list(nombres), loc=8, fontsize=12)
         #for ax in self.ejes:
