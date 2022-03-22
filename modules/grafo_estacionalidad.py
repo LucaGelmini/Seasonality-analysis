@@ -4,7 +4,7 @@ from matplotlib.lines import Line2D
 from collections import Counter
 import numpy as np
 from matplotlib import font_manager
-from wrangling import wrangling
+from wrangling import wrangling_valores as wrangling
 
 
 #cargo df que fue exportado como json
