@@ -357,7 +357,7 @@ class Grafo_Estacionalidad:
     def set_colors(self, *colors: str):
         self.colors = colors
         
-    def set_redondeo(self, redondeo):
+    def set_redondeo(self, redondeo: int):
         self.redondeo=redondeo
 
     def set_legends(self, *nombres: str):
@@ -375,8 +375,6 @@ class Grafo_Estacionalidad:
     def get_fig(self):
         return self.fig
     
-    def debug(self):
-        return self.df['v_expo_media']
 
     def show(self):
         plt.show()
@@ -393,12 +391,13 @@ class Grafo_Estacionalidad:
     def print(self, directorio):
         self.fig.savefig(directorio, transparent=False, dpi=300, bbox_inches = "tight")
         
-    def set_row_names(self, row_names: list[tuple]):
-        self.nombre_filas = row_names
+    def set_row_names(self, *row_names):
+        self.nombre_filas = tuple(row_names)
         
     def set_ylabel (self, label: str, fontsize:int = 25):
         if self.tabla_out:
             self.ejes[0].set_ylabel(label, fontsize = fontsize)
         else:
             self.ejes.set_ylabel(label, fontsize = fontsize)
+    
         
