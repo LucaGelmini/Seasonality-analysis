@@ -4,11 +4,11 @@ from matplotlib.lines import Line2D
 from collections import Counter
 import numpy as np
 from matplotlib import font_manager
-from wrangling import wrangling_valores as wrangling
+from wrangling import wrangling_indices as wrangling
 
 
 #cargo df que fue exportado como json
-df_estacional = wrangling()
+df_estacional = wrangling(path='../data/marzo2022/serie_mensual_indices_comex.xls')
 
 #desde y hasta
 desde = df_estacional.Año[0]
@@ -203,6 +203,7 @@ def hace_tabla (ax, col_width, items, datos_para_tabla):
         tabla.set_fontsize(12)
 
         return tabla
+    
 
 def traduce_meses(mesesIngles: list[str]):
     traductor = {'jan': 'Ene', 'feb': 'Feb', 'mar': 'Mar',
@@ -217,7 +218,13 @@ def traduce_meses(mesesIngles: list[str]):
 
 
 class Grafo_Estacionalidad:
-    def __init__(self, df, *nom_columnas_dato, tituloax1: str = None, tituloax2: str= None, items_tabla = ('ultiAnio', 'med','desvio','max','min','varInter')):
+    def __init__(self,
+                 df,
+                 *nom_columnas_dato,
+                 tituloax1: str = None,
+                 tituloax2: str= None,
+                 items_tabla = ('ultiAnio', 'med','desvio','max','min','varInter'),
+                 tabla_out = False):
         self.df = df
         self.columnas_dato =nom_columnas_dato
         self.tituloax1 = tituloax1
@@ -232,6 +239,8 @@ class Grafo_Estacionalidad:
         self.nombre_filas = ('Ultimo Año', 'Media','Desvío estandar','Máximo','Mínimo','Variación interanual')
         self.redondeo = 1
         self.table_titles = [None]*2
+        self.tabla_out = tabla_out
+        self.datosTabla = None
 
     ######################################## Función Principal ##############################################
     ########################################                   ##############################################
@@ -252,12 +261,20 @@ class Grafo_Estacionalidad:
         
         columnas_dato = self.columnas_dato
 
-        axes_ratio = [self.axes_ratio[1] for _ in columnas_dato]
-        axes_ratio.insert(0,self.axes_ratio[0])
+        
+        if self.tabla_out: # Si imprimimos una tabla tenemos que considerar el lugar que ocupa
+            axes_ratio = [self.axes_ratio[1] for _ in columnas_dato]
+            axes_ratio.insert(0,self.axes_ratio[0])
+            n_ejes = len(columnas_dato)+1
+            self.fig, ejes = plt.subplots((n_ejes),1, gridspec_kw={'height_ratios': axes_ratio})
+            eje_lineas =ejes[0]
+            ejes_tablas = ejes[1:]
+        else:
+            n_ejes = 1
+            axes_ratio = self.axes_ratio
+            self.fig, ejes = plt.subplots((n_ejes),1)
+            eje_lineas =ejes
 
-        self.fig, ejes = plt.subplots((len(columnas_dato)+1),1, gridspec_kw={'height_ratios': axes_ratio})
-        eje_lineas =ejes[0]
-        ejes_tablas = ejes[1:]
         
         self.fig.set_size_inches(self.width,self.length)
 
@@ -288,15 +305,19 @@ class Grafo_Estacionalidad:
 
         
             #agrega las tablas
-            hace_tabla( ejes_tablas[count],
-                        col_width,
-                        self.nombre_filas,
-                        datosTabla(dato, variacion, ultimoanio(dato), self.items_tabla, self.redondeo)
-                        )
-            ejes_tablas[count].axis("off")
-            #ejes_tablas[count].axis('tight')
+            self.datosTabla = datosTabla(dato, variacion, ultimoanio(dato), self.items_tabla, self.redondeo)
+            if self.tabla_out:
+                hace_tabla( ejes_tablas[count],
+                            col_width,
+                            self.nombre_filas,
+                            self.datosTabla
+                            )
+                ejes_tablas[count].axis("off")
+                #ejes_tablas[count].axis('tight')
 
-            ejes_tablas[count].set_title(self.table_titles[count], fontsize = 20)      
+                ejes_tablas[count].set_title(self.table_titles[count], fontsize = 20)
+                
+                 
         
         eje_lineas.set_title(self.tituloax1, fontsize = 25)
         eje_lineas.tick_params(axis='y', which='major', labelsize=15)
@@ -315,6 +336,13 @@ class Grafo_Estacionalidad:
 
         return self.fig, self.ejes
     
+    
+    def df_tabla(self):
+        dic_tabla = {}
+        for i, col in enumerate(self.datosTabla):
+            dic_tabla['mes'] = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+            dic_tabla[self.nombre_filas[i]] = col
+        return pd.DataFrame(dic_tabla)
     ####################################### Seters and Geters ############################################
 
     def set_table_items(self, items: list):
@@ -335,8 +363,11 @@ class Grafo_Estacionalidad:
     def set_legends(self, *nombres: str):
         custom_lines = [Line2D([0], [0], color= self.colors[0], lw=4),
                 Line2D([0], [0], color=self.colors[1], lw=4)]
+        if self.tabla_out:
+            self.ejes[0].legend(custom_lines, list(nombres), loc=8, fontsize=12)
+        else:
+            self.ejes.legend(custom_lines, list(nombres), loc=8, fontsize=12)
 
-        self.ejes[0].legend(custom_lines, list(nombres), loc=8, fontsize=12)
         #for ax in self.ejes:
         #    ax.legend(custom_lines, list(nombres), loc=8, fontsize=12)
 
@@ -353,6 +384,9 @@ class Grafo_Estacionalidad:
     def set_title(self,title: str):
         self.tituloax1 = title
         
+    def set_table(self, mostrar: bool):
+        self.tabla_out = mostrar
+        
     def set_table_title(self, table_title: list[str]):
         self.table_titles = table_title
         
@@ -363,5 +397,8 @@ class Grafo_Estacionalidad:
         self.nombre_filas = row_names
         
     def set_ylabel (self, label: str, fontsize:int = 25):
-        self.ejes[0].set_ylabel(label, fontsize = fontsize)
+        if self.tabla_out:
+            self.ejes[0].set_ylabel(label, fontsize = fontsize)
+        else:
+            self.ejes.set_ylabel(label, fontsize = fontsize)
         

@@ -63,8 +63,8 @@ def wrangling_valores():
     
     return df_valores
 
-def wrangling_indices(desde=2011, hasta=2022):
-    INDICES_PATH = '../data/indice-precios-cantidades-valores-expo.xls'
+def wrangling_indices(desde=2011, hasta=2022, path='../data/indice-precios-cantidades-valores-expo.xls'):
+    INDICES_PATH = path
     df_indices = pd.read_excel(INDICES_PATH, header=None, skiprows = 5, index_col=None)
     df_indices= df_indices.rename(columns = {0:'Año', 1: 'Mes', 2:'iv_x', 3:'ip_x', 4:'iq_x', 5:'del',6:'iv_m',7:'ip_m',8:'iq_m'})
     df_indices.drop(columns="del", inplace= True)
@@ -125,9 +125,7 @@ def wrangling_indices(desde=2011, hasta=2022):
                 media.append(valor)
         return media
 
-        
 
-    print(medias)
     df_indices['iv_x_media'] = repite_medias(df_indices, medias.iv_x)
     df_indices['iv_m_media'] = repite_medias(df_indices, medias.iv_m)
     df_indices['ip_x_media'] = repite_medias(df_indices, medias.ip_x)
