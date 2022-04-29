@@ -7,6 +7,9 @@ from matplotlib import font_manager
 from wrangling import wrangling_indices as wrangling
 
 
+
+
+
 #cargo df que fue exportado como json
 df_estacional = wrangling(path='../data/marzo2022/serie_mensual_indices_comex.xls')
 
@@ -29,7 +32,7 @@ def acumula_muestras (distancias):
 muestrasxMes_acum = acumula_muestras(muestras_x_mes)
 
 def segmenta(lista):
-  #Separa las listas en una lista que contiene nuevas listas por mes
+  '''Separa las listas en una lista que contiene nuevas listas por mes'''
   listaMeses=[]
   for i in range(12):
     listaMeses.append(lista[muestrasxMes_acum[i]:muestrasxMes_acum[i+1]])
@@ -37,21 +40,23 @@ def segmenta(lista):
   return listaMeses
 
   
-#Funcion que agrega NaN para correr las muestras horizontalmente
+
 def corrimientoMuestras(datos, promedio):
-  datos_corridos = segmenta(datos)
-  meida_corrida = segmenta(promedio)
-  for i in range(12):
-    for x in range(muestrasxMes_acum[i]):
-      datos_corridos[i].insert(x, None)
-      meida_corrida[i].insert(x, None)
-  return datos_corridos, meida_corrida
+    '''Funcion que agrega NaN para correr las muestras horizontalmente'''
+    datos_corridos = segmenta(datos)
+    meida_corrida = segmenta(promedio)
+    for i in range(12):
+        for x in range(muestrasxMes_acum[i]):
+            datos_corridos[i].insert(x, None)
+            meida_corrida[i].insert(x, None)
+    return datos_corridos, meida_corrida
 
 
   #Extraemos solo los valores del 2021
 def ultimoanio(datos):
   segmentado = segmenta(datos)
   return [mes[len(mes)-1] for mes in segmentado]
+
 
 
 def maxMinLista (val):
@@ -240,7 +245,7 @@ class Grafo_Estacionalidad:
         self.redondeo = 1
         self.table_titles = [None]*2
         self.tabla_out = tabla_out
-        self.datosTabla = None
+        self.datosTabla = list(nom_columnas_dato)
 
     ######################################## Función Principal ##############################################
     ########################################                   ##############################################
@@ -305,12 +310,12 @@ class Grafo_Estacionalidad:
 
         
             #agrega las tablas
-            self.datosTabla = datosTabla(dato, variacion, ultimoanio(dato), self.items_tabla, self.redondeo)
+            self.datosTabla[count] = datosTabla(dato, variacion, ultimoanio(dato), self.items_tabla, self.redondeo)
             if self.tabla_out:
                 hace_tabla( ejes_tablas[count],
                             col_width,
                             self.nombre_filas,
-                            self.datosTabla
+                            self.datosTabla[count]
                             )
                 ejes_tablas[count].axis("off")
                 #ejes_tablas[count].axis('tight')
@@ -337,12 +342,8 @@ class Grafo_Estacionalidad:
         return self.fig, self.ejes
     
     
-    def df_tabla(self):
-        dic_tabla = {}
-        for i, col in enumerate(self.datosTabla):
-            dic_tabla['mes'] = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-            dic_tabla[self.nombre_filas[i]] = col
-        return pd.DataFrame(dic_tabla)
+
+    
     ####################################### Seters and Geters ############################################
 
     def set_table_items(self, items: list):
@@ -400,4 +401,21 @@ class Grafo_Estacionalidad:
         else:
             self.ejes.set_ylabel(label, fontsize = fontsize)
     
+    def get_columns_data(self):
+        lista_de_df = []
+        for columna in self.columnas_dato:
+            lista_de_df.append(pd.DataFrame(segmenta(self.df[columna].to_list())))
+        return lista_de_df
+
+    def get_dfs_tablas(self):
+        lista_de_tablas = []
+        for tabla in self.datosTabla:
+            dic_tabla = {}
+            for i, col in enumerate(tabla):
+                dic_tabla['mes'] = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+                dic_tabla[self.nombre_filas[i]] = col
+            lista_de_tablas.append(pd.DataFrame(dic_tabla))
+        return lista_de_tablas
+        
+        
         
