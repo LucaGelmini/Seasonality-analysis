@@ -174,6 +174,8 @@ def wrangling_serie_sistema(serie_precios = '../data/marzo2022/Serie original.cs
 
     ### Se adjuntan columnas con el promedio anual ###
     medias = df_valores.groupby(['Mes_num']).mean()
+    
+
     df_valores['v_x_media'] = repite_medias(df_valores, medias.Expo)
     df_valores['v_m_media'] = repite_medias(df_valores, medias.Impo)
     df_valores['ITI_media'] = repite_medias(df_valores, medias.ITI)

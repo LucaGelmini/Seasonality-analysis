@@ -1,17 +1,18 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+import matplotlib as mpl
 from collections import Counter
 import numpy as np
 from matplotlib import font_manager
-from wrangling import wrangling_indices as wrangling
+from wrangling import wrangling_serie_sistema as wr
 
 
 
 
 
 #cargo df que fue exportado como json
-df_estacional = wrangling(path='../data/marzo2022/serie_mensual_indices_comex.xls')
+df_estacional = wr()
 
 #desde y hasta
 desde = df_estacional.Año[0]
@@ -239,14 +240,15 @@ class Grafo_Estacionalidad:
         self.axes_ratio = (15,8)
         self.fig = None
         self.ejes = None
-        self.colors = ['gold','blueviolet', 'blueviolet', 'gold']
+        self.colors = ['#ecb110','blueviolet', 'blueviolet', '#ecb110']
         self.items_tabla = items_tabla
         self.nombre_filas = ('Ultimo Año', 'Media','Desvío estandar','Máximo','Mínimo','Variación interanual')
         self.redondeo = 1
         self.table_titles = [None]*2
         self.tabla_out = tabla_out
         self.datosTabla = list(nom_columnas_dato)
-
+        self.linewidth = 3
+        self.ticksize = 20
     ######################################## Función Principal ##############################################
     ########################################                   ##############################################
     def hacer_grafo(self):
@@ -297,8 +299,8 @@ class Grafo_Estacionalidad:
             datos_corridos, media_corrida = corrimientoMuestras(dato, media)
 
             for i in range(12):
-                eje_lineas.plot(datos_corridos[i], color = self.colors[count+(count)*(0<count)], linewidth=2)
-                eje_lineas.plot(media_corrida[i], color = self.colors[count+1+(count)*(0<count)], linewidth=2)
+                eje_lineas.plot(datos_corridos[i], color = self.colors[count+(count)*(0<count)], linewidth=self.linewidth)
+                eje_lineas.plot(media_corrida[i], color = self.colors[count+1+(count)*(0<count)], linewidth=self.linewidth)
             
             #dibujo lineas verticales por mes
             for muestras in muestrasxMes_acum:
@@ -325,7 +327,7 @@ class Grafo_Estacionalidad:
                  
         
         eje_lineas.set_title(self.tituloax1, fontsize = 25)
-        eje_lineas.tick_params(axis='y', which='major', labelsize=15)
+        eje_lineas.tick_params(axis='y', which='major', labelsize=self.ticksize)
         
 
 
@@ -361,13 +363,13 @@ class Grafo_Estacionalidad:
     def set_redondeo(self, redondeo: int):
         self.redondeo=redondeo
 
-    def set_legends(self, *nombres: str):
+    def set_legends(self, *nombres: str, size = 16, location = 8):
         custom_lines = [Line2D([0], [0], color= self.colors[0], lw=4),
-                Line2D([0], [0], color=self.colors[1], lw=4)]
+                Line2D([0], [0], color=self.colors[2], lw=4)]
         if self.tabla_out:
-            self.ejes[0].legend(custom_lines, list(nombres), loc=8, fontsize=12)
+            self.ejes[0].legend(custom_lines, list(nombres), loc=location, fontsize=12, prop = {'size': size})
         else:
-            self.ejes.legend(custom_lines, list(nombres), loc=8, fontsize=12)
+            self.ejes.legend(custom_lines, list(nombres), loc=location, fontsize=12, prop = {'size': size})
 
         #for ax in self.ejes:
         #    ax.legend(custom_lines, list(nombres), loc=8, fontsize=12)
@@ -417,5 +419,10 @@ class Grafo_Estacionalidad:
             lista_de_tablas.append(pd.DataFrame(dic_tabla))
         return lista_de_tablas
         
+    def set_lineWidth(self, w:int):
+        self.linewidth = w
+
+    def set_ticksize(self, s):
+        self.ticksize = s
         
         
