@@ -168,7 +168,6 @@ def wrangling_serie_sistema(serie_precios = '../data/marzo2022/Serie original.cs
     #### Calculo la variación interanual #####
     df_valores['v_x_var'] = var_inter(df_valores, 'Expo')
     df_valores['v_m_var'] = var_inter(df_valores, 'Impo')
-    df_valores['ITI_var'] = var_inter(df_valores, 'ITI')
     
     df_valores = df_valores.sort_values(['Mes_num', 'Año'])
 
@@ -178,7 +177,6 @@ def wrangling_serie_sistema(serie_precios = '../data/marzo2022/Serie original.cs
 
     df_valores['v_x_media'] = repite_medias(df_valores, medias.Expo)
     df_valores['v_m_media'] = repite_medias(df_valores, medias.Impo)
-    df_valores['ITI_media'] = repite_medias(df_valores, medias.ITI)
     del medias
 
 
@@ -192,10 +190,8 @@ def wrangling_serie_sistema(serie_precios = '../data/marzo2022/Serie original.cs
                             'v_x_media',
                             'Impo',
                             'v_m_var',
-                            'v_m_media',
-                            'ITI',
-                            'ITI_var',
-                            'ITI_media']]
+                            'v_m_media'
+    ]]
     df_valores.reset_index(inplace = True, drop = True)
     df_valores = df_valores.rename(columns={"Expo": "v_x", "Impo": "v_m"})
     
