@@ -1,3 +1,4 @@
+import sys
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
@@ -5,22 +6,15 @@ import matplotlib as mpl
 from collections import Counter
 import numpy as np
 from matplotlib import font_manager
-from wrangling import wrangling_serie_sistema as wr
+from modules.config import path_indices, path_dolares
+from modules.wrangling import wrangling_indices, wrangling_dolares
 
 
-
-
-
-#cargo df que fue exportado como json
-df_estacional = wr()
-
-#desde y hasta
-desde = df_estacional.Año[0]
-hasta = df_estacional.Año[len(df_estacional.Año)-1]
-
-
-##Averiguamos cuantas muestras hoy por mes
-muestras_x_mes = Counter(df_estacional.Mes)
+this = sys.modules[__name__]
+this.df_estacional = None
+this.muestras_x_mes = None
+this.muestrasxMes_acum = None
+this.col_with = None
 
 #sacamos una lista con la cantidad acumulada de muestras por mes, mas adelante eso va a ser la posicion de los xticks
 def acumula_muestras (distancias):
@@ -30,13 +24,32 @@ def acumula_muestras (distancias):
     distancias_acum = np.add.accumulate(distancias_acum).tolist()
     return distancias_acum
 
-muestrasxMes_acum = acumula_muestras(muestras_x_mes)
+def wrangler(name: str = 'indice_VPQ'):
+    if name == 'indice_VPQ':
+        this.df_estacional = wrangling_indices(path=path_indices)
+        setea_constantes()
+        return this.df_estacional
+    if name == 'dolares':
+        this.df_estacional = wrangling_dolares(path=path_dolares)
+        setea_constantes()
+        return this.df_estacional
+    else:
+        return 'error'
+    
+
+def setea_constantes():
+        this.muestras_x_mes = Counter(this.df_estacional.Mes)
+        this.muestrasxMes_acum = acumula_muestras(this.muestras_x_mes)
+        this.col_width = col_width_size(this.muestras_x_mes)
+
+
+
 
 def segmenta(lista):
   '''Separa las listas en una lista que contiene nuevas listas por mes'''
   listaMeses=[]
   for i in range(12):
-    listaMeses.append(lista[muestrasxMes_acum[i]:muestrasxMes_acum[i+1]])
+    listaMeses.append(lista[this.muestrasxMes_acum[i]:this.muestrasxMes_acum[i+1]])
   
   return listaMeses
 
@@ -47,7 +60,7 @@ def corrimientoMuestras(datos, promedio):
     datos_corridos = segmenta(datos)
     meida_corrida = segmenta(promedio)
     for i in range(12):
-        for x in range(muestrasxMes_acum[i]):
+        for x in range(this.muestrasxMes_acum[i]):
             datos_corridos[i].insert(x, None)
             meida_corrida[i].insert(x, None)
     return datos_corridos, meida_corrida
@@ -104,7 +117,7 @@ def col_width_size(muestras_x_mes):
         col_width.append(muestra/sum(muestrasxMes))
     return  col_width
 
-col_width = col_width_size(muestras_x_mes)
+
 
 def puntoyComa(a):
   return '{:,}'.format(a).replace(',','~').replace('.',',').replace('~','.')
@@ -167,7 +180,7 @@ def agrega_variacion(muestras_x_mes, vari):
 
 
 def datosTabla(datos, vari, ultiAnio, items, redondeo = 1):
-    anios = list(Counter(df_estacional.Año.to_list()).keys())
+    anios = list(Counter(this.df_estacional.Año.to_list()).keys())
     tabla = maxMinLista(datos)
     
     #Para el ICA: 1° 2021 / 2° Promedio / 3° Desvio / 4° Max /  5° Minimo / 6 variacion
@@ -189,11 +202,11 @@ def datosTabla(datos, vari, ultiAnio, items, redondeo = 1):
         elif item == 'ultiAnio':
             out.append(agrega_ulimoAnio(ultiAnio, redondeo))
         elif item == 'varInter':
-            out.append(agrega_variacion(muestras_x_mes, vari))
+            out.append(agrega_variacion(this.muestras_x_mes, vari))
     return out
 
 def hace_tabla (ax, col_width, items, datos_para_tabla):
-        lista_meses = traduce_meses(list(muestras_x_mes.keys()))
+        lista_meses = traduce_meses(list(this.muestras_x_mes.keys()))
 
         tabla = ax.table(
                 datos_para_tabla,
@@ -206,7 +219,7 @@ def hace_tabla (ax, col_width, items, datos_para_tabla):
                 )
 
         tabla.auto_set_font_size(False)
-        tabla.set_fontsize(12)
+        tabla.set_fontsize(16)
 
         return tabla
     
@@ -223,10 +236,11 @@ def traduce_meses(mesesIngles: list[str]):
         return mesesIngles
 
 
+
 class Grafo_Estacionalidad:
     def __init__(self,
-                 df,
                  *nom_columnas_dato,
+                 df,
                  tituloax1: str = None,
                  tituloax2: str= None,
                  items_tabla = ('ultiAnio', 'med','desvio','max','min','varInter'),
@@ -253,18 +267,14 @@ class Grafo_Estacionalidad:
     ########################################                   ##############################################
     def hacer_grafo(self):
         
-        ### Intentos infructuosos de usar una fuente instalada (infructuosos al exportar en pdf) ####
-        # specify the custom font to use
-        font_dirs = ['./fonts/HelveticaNeueLTStd-Cn.otf']
-        font_files = font_manager.findSystemFonts(fontpaths=font_dirs)
+        font_path = '../modules/fonts/Helvetica-Neue-LT-Std-77-Bold-Condensed_22542.ttf'  # Your font path goes here
+        font_manager.fontManager.addfont(font_path)
+        prop = font_manager.FontProperties(fname=font_path)
 
-        for font_file in font_files:
-            font_manager.fontManager.addfont(font_file)
-
-        # set font
-        plt.rcParams['font.family'] = 'Helvetica'
+        plt.rcParams['font.family'] = 'sans-serif'
+        plt.rcParams['font.sans-serif'] = prop.get_name()
         
-        #________________________________
+
         
         columnas_dato = self.columnas_dato
 
@@ -291,7 +301,6 @@ class Grafo_Estacionalidad:
             
             columna_dato_media = f'{columna_dato}_media'
             columna_dato_vari = f'{columna_dato}_var'
-
             dato= self.df[columna_dato].to_list()
             media= self.df[columna_dato_media].to_list()
             variacion = self.df[columna_dato_vari].to_list()
@@ -303,7 +312,7 @@ class Grafo_Estacionalidad:
                 eje_lineas.plot(media_corrida[i], color = self.colors[count+1+(count)*(0<count)], linewidth=self.linewidth)
             
             #dibujo lineas verticales por mes
-            for muestras in muestrasxMes_acum:
+            for muestras in this.muestrasxMes_acum:
                 eje_lineas.axvline(muestras, color='grey', linestyle='--' )
                 
             eje_lineas.set_xmargin(0)
@@ -315,7 +324,7 @@ class Grafo_Estacionalidad:
             self.datosTabla[count] = datosTabla(dato, variacion, ultimoanio(dato), self.items_tabla, self.redondeo)
             if self.tabla_out:
                 hace_tabla( ejes_tablas[count],
-                            col_width,
+                            this.col_width,
                             self.nombre_filas,
                             self.datosTabla[count]
                             )
@@ -342,7 +351,6 @@ class Grafo_Estacionalidad:
 
 
         return self.fig, self.ejes
-    
     
 
     
@@ -371,8 +379,6 @@ class Grafo_Estacionalidad:
         else:
             self.ejes.legend(custom_lines, list(nombres), loc=location, fontsize=12, prop = {'size': size})
 
-        #for ax in self.ejes:
-        #    ax.legend(custom_lines, list(nombres), loc=8, fontsize=12)
 
 
     def get_fig(self):
@@ -402,6 +408,9 @@ class Grafo_Estacionalidad:
             self.ejes[0].set_ylabel(label, fontsize = fontsize)
         else:
             self.ejes.set_ylabel(label, fontsize = fontsize)
+            
+    def get_df(self):
+        return self.df
     
     def get_columns_data(self):
         lista_de_df = []

@@ -13,55 +13,55 @@ def repite_medias(df_target, media_col):
             media.append(valor)
     return media
 
-def wrangling_valores(serie_precios = '../data/datos para grafico de subseries.xlsx'):
-    #### Importamos el excel como dataFrame ####
+# def wrangling_valores(serie_precios = '../data/datos para grafico de subseries.xlsx'):
+#     #### Importamos el excel como dataFrame ####
     
-    df_valores = pd.read_excel(serie_precios)
+#     df_valores = pd.read_excel(serie_precios)
 
-    #### Elimino primer fila vacia#####
-    df_valores.drop(0,inplace=True)
+#     #### Elimino primer fila vacia#####
+#     df_valores.drop(0,inplace=True)
 
-    ##### Armo una columna con el año y otra con el mes ####
-    mes_año = list(map(lambda x: x.split('-'),df_valores.Periodo))
-    año = [int(f'20{d[1]}') for d in mes_año]
-    df_valores['Año'] = año
-    df_valores['Mes'] = [d[0] for d in mes_año]
-    del df_valores['Periodo']
+#     ##### Armo una columna con el año y otra con el mes ####
+#     mes_año = list(map(lambda x: x.split('-'),df_valores.Periodo))
+#     año = [int(f'20{d[1]}') for d in mes_año]
+#     df_valores['Año'] = año
+#     df_valores['Mes'] = [d[0] for d in mes_año]
+#     del df_valores['Periodo']
 
-    ### Creo una columna con el numero de mes
-    df_valores['Mes_num'] = df_valores.Mes.apply(lambda m: strptime(m,'%b').tm_mon)
+#     ### Creo una columna con el numero de mes
+#     df_valores['Mes_num'] = df_valores.Mes.apply(lambda m: strptime(m,'%b').tm_mon)
 
-    #### Casteo los valores a float ####
-    df_valores.Expo = df_valores.Expo.apply(lambda x: float(x.replace(',', '')))
-    df_valores.Impo = df_valores.Impo.apply(lambda x: float(x.replace(',', '')))
+#     #### Casteo los valores a float ####
+#     df_valores.Expo = df_valores.Expo.apply(lambda x: float(x.replace(',', '')))
+#     df_valores.Impo = df_valores.Impo.apply(lambda x: float(x.replace(',', '')))
 
-    #### Calculo la variación interanual #####
-    df_valores['v_x_var'] = var_inter(df_valores, 'Expo')
-    df_valores['v_m_var'] = var_inter(df_valores, 'Impo')
+#     #### Calculo la variación interanual #####
+#     df_valores['v_x_var'] = var_inter(df_valores, 'Expo')
+#     df_valores['v_m_var'] = var_inter(df_valores, 'Impo')
 
-    df_valores = df_valores.sort_values(['Mes_num', 'Año'])
+#     df_valores = df_valores.sort_values(['Mes_num', 'Año'])
 
-    ### Se adjuntan columnas con el promedio anual ###
-    medias = df_valores.groupby(['Mes_num']).mean()
-    df_valores['v_x_media'] = repite_medias(df_valores, medias.Expo)
-    df_valores['v_m_media'] = repite_medias(df_valores, medias.Impo)
-    del medias
+#     ### Se adjuntan columnas con el promedio anual ###
+#     medias = df_valores.groupby(['Mes_num']).mean()
+#     df_valores['v_x_media'] = repite_medias(df_valores, medias.Expo)
+#     df_valores['v_m_media'] = repite_medias(df_valores, medias.Impo)
+#     del medias
 
-    #### Filtro solo para enero y febrero. Ordeno las columnas ####
-    #df_valores = df_valores[(df_valores.Mes == 'Jan') | (df_valores.Mes == 'Feb') ]
-    df_valores = df_valores[['Mes_num',
-                            'Año',
-                            'Mes',
-                            'Expo',
-                            'v_x_var',
-                            'v_x_media',
-                            'Impo',
-                            'v_m_var',
-                            'v_m_media']]
-    df_valores.reset_index(inplace = True, drop = True)
-    df_valores = df_valores.rename(columns={"Expo": "v_x", "Impo": "v_m"})
+#     #### Filtro solo para enero y febrero. Ordeno las columnas ####
+#     #df_valores = df_valores[(df_valores.Mes == 'Jan') | (df_valores.Mes == 'Feb') ]
+#     df_valores = df_valores[['Mes_num',
+#                             'Año',
+#                             'Mes',
+#                             'Expo',
+#                             'v_x_var',
+#                             'v_x_media',
+#                             'Impo',
+#                             'v_m_var',
+#                             'v_m_media']]
+#     df_valores.reset_index(inplace = True, drop = True)
+#     df_valores = df_valores.rename(columns={"Expo": "v_x", "Impo": "v_m"})
     
-    return df_valores
+#     return df_valores
 
 def wrangling_indices(desde=2011, hasta=2022, path='../data/indice-precios-cantidades-valores-expo.xls'):
     INDICES_PATH = path
@@ -145,44 +145,49 @@ def wrangling_indices(desde=2011, hasta=2022, path='../data/indice-precios-canti
     
     return df_indices
 
-def wrangling_serie_sistema(serie_precios = '../data/marzo2022/Serie original.csv', desde = 2011, hasta= 2022):
+def wrangling_dolares(path = '../data/marzo2022/Serie original.csv', desde = 2011, hasta= 2022):
+    '''Devuelve los precios en millones de dólares'''
     #### Importamos el excel como dataFrame ####
-    
-    df_valores = pd.read_csv(serie_precios,  delimiter=";", index_col= False)
+    serie_precios = path 
+    df_dolares = pd.read_csv(serie_precios,  delimiter=";", index_col= False)
 
     ### La columna mes en realidad tiene solo el numero ###
-    df_valores.rename(columns= {'Mes': 'Mes_num', 'Exportaciones': 'Expo', 'Importaciones': 'Impo'}, inplace= True)
-    df_valores.Mes_num.apply(lambda x: int(x))
+    
+    df_dolares.rename(columns= {'Mes': 'Mes_num', 'Exportaciones': 'Expo', 'Importaciones': 'Impo'}, inplace=True)
+    df_dolares.Mes_num.apply(lambda x: int(x))
     
     #Armo la lista con los nombres de cada mes
     lista_meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-    df_valores['Mes'] = [lista_meses[mes_num-1] for mes_num in df_valores.Mes_num]
+    df_dolares['Mes'] = [lista_meses[mes_num-1] for mes_num in df_dolares.Mes_num]
 
     #### Casteo los valores a float ####
-    df_valores.Expo = df_valores.Expo.apply(lambda x: float(x.replace(',','.')))
-    df_valores.Impo = df_valores.Impo.apply(lambda x: float(x.replace(',','.')))
+    df_dolares.Expo = df_dolares.Expo.apply(lambda x: float(x.replace(',','.'))/1000000)
+    df_dolares.Impo = df_dolares.Impo.apply(lambda x: float(x.replace(',','.'))/1000000)
+    
 
     #ITI
-    df_valores['ITI'] = (df_valores.Expo / df_valores.Impo)*100
+    df_dolares['Saldo'] = (df_dolares.Expo - df_dolares.Impo)
 
     #### Calculo la variación interanual #####
-    df_valores['v_x_var'] = var_inter(df_valores, 'Expo')
-    df_valores['v_m_var'] = var_inter(df_valores, 'Impo')
+    df_dolares['v_x_var'] = var_inter(df_dolares, 'Expo')
+    df_dolares['v_m_var'] = var_inter(df_dolares, 'Impo')
     
-    df_valores = df_valores.sort_values(['Mes_num', 'Año'])
+    df_dolares = df_dolares.sort_values(['Mes_num', 'Año'])
+
+    df_dolares = df_dolares.loc[(df_dolares['Año'] >= desde) & (df_dolares['Año'] <= hasta)]
+    df_dolares.reset_index(drop=True, inplace=True)
 
     ### Se adjuntan columnas con el promedio anual ###
-    medias = df_valores.groupby(['Mes_num']).mean()
+    medias = df_dolares.groupby('Mes_num').mean()
     
 
-    df_valores['v_x_media'] = repite_medias(df_valores, medias.Expo)
-    df_valores['v_m_media'] = repite_medias(df_valores, medias.Impo)
+    df_dolares['v_x_media'] = repite_medias(df_dolares, medias.Expo)
+    df_dolares['v_m_media'] = repite_medias(df_dolares, medias.Impo)
     del medias
 
-
     #### Filtro solo para enero y febrero. Ordeno las columnas ####
-    #df_valores = df_valores[(df_valores.Mes == 'Jan') | (df_valores.Mes == 'Feb') ]
-    df_valores = df_valores[['Mes_num',
+    #df_dolares = df_dolares[(df_dolares.Mes == 'Jan') | (df_dolares.Mes == 'Feb') ]
+    df_dolares = df_dolares[['Mes_num',
                             'Año',
                             'Mes',
                             'Expo',
@@ -192,10 +197,8 @@ def wrangling_serie_sistema(serie_precios = '../data/marzo2022/Serie original.cs
                             'v_m_var',
                             'v_m_media'
     ]]
-    df_valores.reset_index(inplace = True, drop = True)
-    df_valores = df_valores.rename(columns={"Expo": "v_x", "Impo": "v_m"})
+
+    df_dolares = df_dolares.rename(columns={"Expo": "v_x", "Impo": "v_m"})
     
-    df_valores = df_valores.loc[(df_valores['Año'] >= desde) & (df_valores['Año'] <= hasta)]
-    df_valores.reset_index(drop=True, inplace=True)
     
-    return df_valores
+    return df_dolares
